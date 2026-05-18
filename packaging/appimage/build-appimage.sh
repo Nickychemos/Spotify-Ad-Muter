@@ -21,7 +21,10 @@ python3 -m venv "$WORK/venv"
 "$WORK/venv/bin/pip" install --quiet --upgrade pip
 "$WORK/venv/bin/pip" install --quiet python-appimage
 
-# Construct the app directory expected by python-appimage.
+# Construct the app directory expected by python-appimage:
+#   APP/entrypoint              "module:function" — what to call as __main__
+#   APP/requirements.txt        pip deps to install into the bundled site-packages
+#   APP/spotify_ad_mute.py      the module itself, will go into site-packages
 APP="$WORK/app"
 mkdir -p "$APP"
 cp src/spotify_ad_mute.py "$APP/spotify_ad_mute.py"
@@ -30,17 +33,23 @@ cat > "$APP/requirements.txt" <<'EOF'
 pulsectl>=23.5.2
 EOF
 
-# Calling spotify_ad_mute.main() is what `python src/spotify_ad_mute.py` does.
 cat > "$APP/entrypoint" <<'EOF'
-{{ python-executable }} -c "from spotify_ad_mute import main; import sys; sys.exit(main())" "$@"
+spotify_ad_mute:main
 EOF
 
+# Build. python-appimage writes the .AppImage into the current working dir.
+( cd "$WORK" && "$WORK/venv/bin/python-appimage" build app -p "$PYVERSION" --name "$PKG" "$APP" )
+
+# Move it to build/ with our preferred name.
+PRODUCED="$(find "$WORK" -maxdepth 1 -name '*.AppImage' -print -quit)"
+if [ -z "$PRODUCED" ]; then
+    echo "ERROR: python-appimage didn't produce a .AppImage file." >&2
+    exit 1
+fi
 OUT="$BUILD_DIR/${PKG}-${VERSION}-x86_64.AppImage"
-"$WORK/venv/bin/python-appimage" build app -p "$PYVERSION" "$APP" --name "$PKG" --output "$OUT"
+mv "$PRODUCED" "$OUT"
+chmod +x "$OUT"
 
 echo
 echo "Built:"
 ls -la "$OUT"
-echo
-echo "Smoke test (should print usage / startup line):"
-"$OUT" --help 2>&1 | head -5 || true

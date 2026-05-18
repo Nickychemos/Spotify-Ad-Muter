@@ -31,13 +31,13 @@ Runs as a systemd user service that auto-starts on login.
 %install
 install -Dm755 packaging/debian/spotify-ad-muter %{buildroot}%{_bindir}/spotify-ad-muter
 install -Dm644 src/spotify_ad_mute.py %{buildroot}%{_prefix}/lib/spotify-ad-muter/spotify_ad_mute.py
-install -Dm644 packaging/systemd/spotify-ad-muter.service %{buildroot}%{_userunitdir}/spotify-ad-muter.service
+install -Dm644 packaging/systemd/spotify-ad-muter.service %{buildroot}/usr/lib/systemd/user/spotify-ad-muter.service
 install -Dm644 README.md %{buildroot}%{_docdir}/spotify-ad-muter/README.md
 
 %files
 %{_bindir}/spotify-ad-muter
 %{_prefix}/lib/spotify-ad-muter/spotify_ad_mute.py
-%{_userunitdir}/spotify-ad-muter.service
+/usr/lib/systemd/user/spotify-ad-muter.service
 %doc %{_docdir}/spotify-ad-muter/README.md
 
 %post
@@ -106,5 +106,5 @@ if [ "$1" -eq 0 ]; then
 fi
 
 %changelog
-* Mon May 19 2026 Nickychemos <surajit.das0320@gmail.com> - @VERSION@-1
+* Mon Jan 01 2024 Nickychemos <surajit.das0320@gmail.com> - @VERSION@-1
 - Auto-generated from upstream.
