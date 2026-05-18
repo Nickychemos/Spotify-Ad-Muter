@@ -1,0 +1,110 @@
+Name:           spotify-ad-muter
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        Mute Spotify advertisements on Linux
+License:        MIT
+URL:            https://github.com/Nickychemos/Spotify-Ad-Muter
+Source0:        %{name}-%{version}.tar.gz
+BuildArch:      noarch
+
+Requires:       python3 >= 3.10
+Requires:       python3-pulsectl
+Requires:       playerctl
+Recommends:     spotify-client
+
+%description
+Detects when Spotify is playing an advertisement via its MPRIS D-Bus
+interface and mutes its PulseAudio/PipeWire output stream until music
+resumes. The ad still plays out, only the sound is muted, so Spotify
+cannot tell that it was skipped.
+
+Runs as a systemd user service that auto-starts on login.
+
+%global debug_package %{nil}
+
+%prep
+%setup -q
+
+%build
+# Pure-Python, nothing to build.
+
+%install
+install -Dm755 packaging/debian/spotify-ad-muter %{buildroot}%{_bindir}/spotify-ad-muter
+install -Dm644 src/spotify_ad_mute.py %{buildroot}%{_prefix}/lib/spotify-ad-muter/spotify_ad_mute.py
+install -Dm644 packaging/systemd/spotify-ad-muter.service %{buildroot}%{_userunitdir}/spotify-ad-muter.service
+install -Dm644 README.md %{buildroot}%{_docdir}/spotify-ad-muter/README.md
+
+%files
+%{_bindir}/spotify-ad-muter
+%{_prefix}/lib/spotify-ad-muter/spotify_ad_mute.py
+%{_userunitdir}/spotify-ad-muter.service
+%doc %{_docdir}/spotify-ad-muter/README.md
+
+%post
+UNIT=spotify-ad-muter.service
+if [ "$1" -eq 1 ] || [ "$1" -eq 2 ]; then
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --global enable "$UNIT" >/dev/null 2>&1 || true
+    fi
+    if command -v loginctl >/dev/null 2>&1 && command -v runuser >/dev/null 2>&1; then
+        loginctl list-users --no-legend 2>/dev/null | awk '{print $1, $2}' | \
+        while read -r uid user; do
+            [ -n "$uid" ] && [ -n "$user" ] || continue
+            runtime_dir="/run/user/$uid"
+            [ -d "$runtime_dir" ] || continue
+            runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                systemctl --user daemon-reload >/dev/null 2>&1 || true
+            runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                systemctl --user enable --now "$UNIT" >/dev/null 2>&1 || true
+        done
+    fi
+
+    WARN=""
+    if command -v flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -qi com.spotify.Client; then
+        WARN="${WARN} Flatpak"
+    fi
+    if [ -n "$WARN" ]; then
+        cat >&2 <<EOF
+
+================================================================
+WARNING: A sandboxed Spotify build was detected (${WARN# }).
+
+Sandboxed builds of Spotify refuse the MPRIS D-Bus queries that
+spotify-ad-muter relies on, so this tool cannot function against
+them. Replace your sandboxed build with the official client:
+
+    sudo flatpak uninstall com.spotify.Client
+    (then install spotify-client via RPM Fusion, LZPlay, etc.)
+
+The muter has been installed regardless; it will take effect as
+soon as the official client is in place.
+================================================================
+EOF
+    else
+        echo "spotify-ad-muter installed and enabled."
+        echo "It will autostart on each user's next login,"
+        echo "and has been started for any currently logged-in users."
+    fi
+fi
+
+%preun
+UNIT=spotify-ad-muter.service
+if [ "$1" -eq 0 ]; then
+    if command -v loginctl >/dev/null 2>&1 && command -v runuser >/dev/null 2>&1; then
+        loginctl list-users --no-legend 2>/dev/null | awk '{print $1, $2}' | \
+        while read -r uid user; do
+            [ -n "$uid" ] && [ -n "$user" ] || continue
+            runtime_dir="/run/user/$uid"
+            [ -d "$runtime_dir" ] || continue
+            runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                systemctl --user disable --now "$UNIT" >/dev/null 2>&1 || true
+        done
+    fi
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --global disable "$UNIT" >/dev/null 2>&1 || true
+    fi
+fi
+
+%changelog
+* Mon May 19 2026 Nickychemos <surajit.das0320@gmail.com> - @VERSION@-1
+- Auto-generated from upstream.

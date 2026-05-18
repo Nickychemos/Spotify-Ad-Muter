@@ -1,0 +1,52 @@
+_enable_for_logged_in_users() {
+    if command -v loginctl >/dev/null 2>&1 && command -v runuser >/dev/null 2>&1; then
+        loginctl list-users --no-legend 2>/dev/null | awk '{print $1, $2}' | \
+        while read -r uid user; do
+            [ -n "$uid" ] && [ -n "$user" ] || continue
+            runtime_dir="/run/user/$uid"
+            [ -d "$runtime_dir" ] || continue
+            runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                systemctl --user daemon-reload >/dev/null 2>&1 || true
+            runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                systemctl --user enable --now spotify-ad-muter.service >/dev/null 2>&1 || true
+        done
+    fi
+}
+
+_disable_for_logged_in_users() {
+    if command -v loginctl >/dev/null 2>&1 && command -v runuser >/dev/null 2>&1; then
+        loginctl list-users --no-legend 2>/dev/null | awk '{print $1, $2}' | \
+        while read -r uid user; do
+            [ -n "$uid" ] && [ -n "$user" ] || continue
+            runtime_dir="/run/user/$uid"
+            [ -d "$runtime_dir" ] || continue
+            runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                systemctl --user disable --now spotify-ad-muter.service >/dev/null 2>&1 || true
+        done
+    fi
+}
+
+post_install() {
+    systemctl --global enable spotify-ad-muter.service >/dev/null 2>&1 || true
+    _enable_for_logged_in_users
+
+    if ! pacman -Qq spotify >/dev/null 2>&1; then
+        echo
+        echo "Note: the Spotify client itself is not installed."
+        echo "Install it from the AUR, e.g.:  yay -S spotify"
+        echo
+    fi
+
+    echo "spotify-ad-muter installed and enabled."
+    echo "It will autostart on each user's next login,"
+    echo "and has been started for any currently logged-in users."
+}
+
+post_upgrade() {
+    post_install
+}
+
+pre_remove() {
+    _disable_for_logged_in_users
+    systemctl --global disable spotify-ad-muter.service >/dev/null 2>&1 || true
+}

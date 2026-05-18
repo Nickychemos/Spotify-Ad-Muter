@@ -14,24 +14,60 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Build .deb
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          echo "Building spotify-ad-muter version $VERSION"
           make deb VERSION="$VERSION"
           ls -la build/
-
-      - name: Upload .deb artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: deb
           path: build/*.deb
           if-no-files-found: error
 
+  build-rpm:
+    name: Build .rpm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install rpmbuild
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+      - name: Build .rpm
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          make rpm VERSION="$VERSION"
+          ls -la build/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: build/*.rpm
+          if-no-files-found: error
+
+  build-appimage:
+    name: Build AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-venv python3-pip libfuse2
+      - name: Build AppImage
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          make appimage VERSION="$VERSION"
+          ls -la build/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: build/*.AppImage
+          if-no-files-found: error
+
   release:
     name: Publish release
-    needs: [build-deb]
+    needs: [build-deb, build-rpm, build-appimage]
     runs-on: ubuntu-latest
     steps:
       - name: Download all build artifacts

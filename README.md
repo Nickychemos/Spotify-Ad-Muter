@@ -1,8 +1,47 @@
-# Spotify Ad Mute (Linux)
+# Spotify Ad Muter (Linux)
 
 Silences Spotify's audio output while an ad is playing and unmutes the moment
 music resumes. The ad still plays through — only the sound is muted — so
 Spotify can't tell it was skipped.
+
+## Install (end users)
+
+Download the right package for your distro from the
+[Releases page](https://github.com/Nickychemos/Spotify-Ad-Muter/releases),
+then install. Once installed, the muter runs as a background service that
+auto-starts on every login — no further setup, no command line.
+
+### Debian / Ubuntu / Mint / Pop!_OS
+
+```bash
+sudo apt install ~/Downloads/spotify-ad-muter_*.deb
+```
+
+### Fedora / RHEL / openSUSE
+
+```bash
+sudo dnf install ~/Downloads/spotify-ad-muter-*.rpm
+```
+
+### Arch / Manjaro / EndeavourOS
+
+```bash
+# from this repo
+makepkg -si    # in packaging/arch/
+```
+
+### Any other distro (AppImage)
+
+```bash
+chmod +x spotify-ad-muter-*.AppImage
+./spotify-ad-muter-*.AppImage
+# leave this terminal open, or add to your autostart programs
+```
+
+> Spotify itself must be the **official client**, not Snap or Flatpak — those
+> sandboxed builds block the D-Bus queries this tool relies on. On Debian-
+> family systems install it with `sudo apt install spotify-client` from
+> Spotify's apt repo.
 
 ## How it works
 
@@ -15,81 +54,48 @@ it unmutes.
 
 Only Spotify's audio stream is touched; system volume is untouched.
 
-## Requirements
-
-- A Linux desktop with **PulseAudio** or **PipeWire** (with `pipewire-pulse`)
-- `playerctl` on `PATH`
-- Python 3.10+
-- **The official `.deb` build of Spotify.** The Snap and Flatpak builds
-  refuse MPRIS queries via AppArmor and don't identify their PulseAudio
-  stream — this script can't work with them. If you currently have the
-  Snap, run `./install_spotify_deb.sh` to replace it.
-
-## Install
+## Useful commands
 
 ```bash
-git clone <this repo>
-cd spotify-ad-mute
-
-# (Optional) replace Snap Spotify with the official .deb:
-./install_spotify_deb.sh
-
-# Install playerctl and create the Python venv:
-./setup.sh
+systemctl --user status spotify-ad-muter      # is it running?
+systemctl --user restart spotify-ad-muter     # after upgrading
+journalctl --user -u spotify-ad-muter -f      # live log
+tail -f ~/.spotify-ad-muter.log               # same, via file
 ```
 
-## Run
-
-One-shot, foreground (handy while testing):
+## Diagnostics (without waiting for a real ad)
 
 ```bash
-./venv/bin/python src/spotify_ad_mute.py
-```
-
-You'll see a startup self-check, then a heartbeat line every 30 seconds and
-a log line every time mute is toggled. Logs also go to
-`~/.spotify-ad-mute.log`.
-
-### Run as a systemd user service (autostart on login)
-
-```bash
-mkdir -p ~/.config/systemd/user
-cp packaging/systemd/spotify-ad-muter.service ~/.config/systemd/user/
-# Edit the file if your project lives somewhere other than ~/Desktop/spotify-ad-mute
-systemctl --user daemon-reload
-systemctl --user enable --now spotify-ad-muter.service
-```
-
-Useful commands:
-
-```bash
-systemctl --user status spotify-ad-mute
-systemctl --user restart spotify-ad-mute
-journalctl --user -u spotify-ad-mute -f
-```
-
-## Diagnostics
-
-The script has two flags for verifying things work without waiting for a
-real ad:
-
-```bash
-# Mute Spotify for 3s — proves the PulseAudio path works.
-./venv/bin/python src/spotify_ad_mute.py --test-mute
-
-# Run the ad-trackid classifier on known samples, then pretend an ad
-# arrived and run the full mute/unmute cycle.
-./venv/bin/python src/spotify_ad_mute.py --simulate-ad
-```
-
-## Logs
-
-```bash
-tail -f ~/.spotify-ad-mute.log
+spotify-ad-muter --test-mute     # mute Spotify for 3s — proves audio path works
+spotify-ad-muter --simulate-ad   # run the full ad-detection + mute cycle on a fake trackid
 ```
 
 ## Limitations
 
-- Only the official `.deb` Spotify client is supported (see Requirements).
+- Only the official Spotify client (not Snap or Flatpak) is supported.
 - Spotify Premium accounts never receive ads — there is nothing to mute.
-- Browser/web-player playback is not handled; only the desktop client.
+- Browser / web-player playback is not handled; only the desktop client.
+
+## Building from source
+
+If you're hacking on this or want to rebuild a package locally:
+
+```bash
+git clone https://github.com/Nickychemos/Spotify-Ad-Muter
+cd Spotify-Ad-Muter
+
+make deb        # → build/spotify-ad-muter_X.Y.Z_all.deb
+make rpm        # → build/spotify-ad-muter-X.Y.Z-1.<dist>.noarch.rpm   (needs rpmbuild)
+make appimage   # → build/spotify-ad-muter-X.Y.Z-x86_64.AppImage
+make all        # all three
+```
+
+Releases are cut automatically by GitHub Actions when a `v*` tag is pushed —
+see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+
+### Running directly from a checkout (no install)
+
+```bash
+./setup.sh
+./venv/bin/python src/spotify_ad_mute.py
+```

@@ -1,0 +1,29 @@
+# Maintainer: Nickychemos <surajit.das0320@gmail.com>
+pkgname=spotify-ad-muter
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Mute Spotify advertisements on Linux"
+arch=('any')
+url="https://github.com/Nickychemos/Spotify-Ad-Muter"
+license=('MIT')
+depends=('python' 'python-pulsectl' 'playerctl')
+optdepends=('spotify: official Spotify client (AUR)')
+install="${pkgname}.install"
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+    cd "Spotify-Ad-Muter-${pkgver}"
+
+    install -Dm755 packaging/debian/spotify-ad-muter \
+        "${pkgdir}/usr/bin/spotify-ad-muter"
+
+    install -Dm644 src/spotify_ad_mute.py \
+        "${pkgdir}/usr/lib/spotify-ad-muter/spotify_ad_mute.py"
+
+    install -Dm644 packaging/systemd/spotify-ad-muter.service \
+        "${pkgdir}/usr/lib/systemd/user/spotify-ad-muter.service"
+
+    install -Dm644 README.md \
+        "${pkgdir}/usr/share/doc/spotify-ad-muter/README.md"
+}
