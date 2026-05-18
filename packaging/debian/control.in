@@ -5,7 +5,7 @@ Priority: optional
 Architecture: all
 Depends: python3 (>= 3.10), python3-pulsectl, playerctl
 Recommends: spotify-client
-Maintainer: Nickychemos <surajit.das0320@gmail.com>
+Maintainer: Nickychemos <Nickychemos@users.noreply.github.com>
 Homepage: https://github.com/Nickychemos/Spotify-Ad-Muter
 Description: Mute Spotify advertisements on Linux
  Detects when Spotify is playing an advertisement via its MPRIS D-Bus
