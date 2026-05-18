@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Wrapper installed at /usr/bin/spotify-ad-muter.
+# Just execs the real Python script with the system interpreter.
+exec /usr/bin/python3 /usr/lib/spotify-ad-muter/spotify_ad_mute.py "$@"

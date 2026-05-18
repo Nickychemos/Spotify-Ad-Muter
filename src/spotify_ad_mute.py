@@ -19,7 +19,7 @@ import pulsectl
 
 POLL_INTERVAL_SECONDS = 0.5
 HEARTBEAT_INTERVAL_SECONDS = 30
-LOG_PATH = Path.home() / ".spotify-ad-mute.log"
+LOG_PATH = Path.home() / ".spotify-ad-muter.log"
 
 logging.basicConfig(
     level=logging.INFO,

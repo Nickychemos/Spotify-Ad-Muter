@@ -1,0 +1,70 @@
+#!/bin/sh
+# Run after the package's files are installed.
+# Goal: every existing user, and every future user, gets the muter running
+# automatically on login. Currently-logged-in users get it started right now.
+set -e
+
+UNIT=spotify-ad-muter.service
+
+case "$1" in
+    configure)
+        # 1. Tell systemd about the new user unit and enable it for every
+        #    user account on the machine (effective on next login).
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl --global enable "$UNIT" >/dev/null 2>&1 || true
+        fi
+
+        # 2. For users who are logged in right now, daemon-reload + start
+        #    so they don't have to log out/in for things to work.
+        if command -v loginctl >/dev/null 2>&1 && command -v runuser >/dev/null 2>&1; then
+            loginctl list-users --no-legend 2>/dev/null | awk '{print $1, $2}' | \
+            while read -r uid user; do
+                [ -n "$uid" ] && [ -n "$user" ] || continue
+                runtime_dir="/run/user/$uid"
+                [ -d "$runtime_dir" ] || continue
+                runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                    systemctl --user daemon-reload >/dev/null 2>&1 || true
+                runuser -u "$user" -- env XDG_RUNTIME_DIR="$runtime_dir" \
+                    systemctl --user enable --now "$UNIT" >/dev/null 2>&1 || true
+            done
+        fi
+
+        # 3. If Snap or Flatpak Spotify is installed, warn loudly. The muter
+        #    will install fine but won't actually work against those builds.
+        WARN=""
+        if command -v snap >/dev/null 2>&1 && snap list spotify >/dev/null 2>&1; then
+            WARN="${WARN} Snap"
+        fi
+        if command -v flatpak >/dev/null 2>&1 && flatpak list 2>/dev/null | grep -qi com.spotify.Client; then
+            WARN="${WARN} Flatpak"
+        fi
+
+        if [ -n "$WARN" ]; then
+            cat >&2 <<EOF
+
+================================================================
+WARNING: A sandboxed Spotify build was detected (${WARN# }).
+
+The Snap and Flatpak builds of Spotify refuse the MPRIS D-Bus
+queries that spotify-ad-muter relies on, so this tool cannot
+function against them. Please replace your sandboxed build with
+the official .deb client:
+
+    sudo snap remove spotify          # if Snap
+    sudo flatpak uninstall com.spotify.Client    # if Flatpak
+    sudo apt install spotify-client
+
+The muter has been installed and enabled regardless; it will
+take effect as soon as the official client is in place.
+================================================================
+
+EOF
+        else
+            echo "spotify-ad-muter installed and enabled."
+            echo "It will autostart on each user's next login,"
+            echo "and has been started for any currently logged-in users."
+        fi
+        ;;
+esac
+
+exit 0

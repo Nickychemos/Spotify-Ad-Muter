@@ -1,0 +1,18 @@
+Package: spotify-ad-muter
+Version: @VERSION@
+Section: sound
+Priority: optional
+Architecture: all
+Depends: python3 (>= 3.10), python3-pulsectl, playerctl
+Recommends: spotify-client
+Maintainer: Nickychemos <surajit.das0320@gmail.com>
+Homepage: https://github.com/Nickychemos/Spotify-Ad-Muter
+Description: Mute Spotify advertisements on Linux
+ Detects when Spotify is playing an advertisement via its MPRIS D-Bus
+ interface and mutes its PulseAudio/PipeWire output stream until music
+ resumes. The ad still plays out, only the sound is muted, so Spotify
+ cannot tell that it was skipped.
+ .
+ Runs as a systemd user service that auto-starts on login. Works only
+ with the official spotify-client .deb; the Snap and Flatpak builds
+ refuse the MPRIS queries this tool relies on.
