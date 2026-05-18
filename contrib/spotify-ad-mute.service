@@ -1,0 +1,14 @@
+[Unit]
+Description=Spotify Ad Muter
+After=pipewire-pulse.service pipewire.service
+Wants=pipewire-pulse.service
+
+[Service]
+Type=simple
+# Edit this path if your checkout lives elsewhere.
+ExecStart=%h/Desktop/spotify-ad-mute/venv/bin/python %h/Desktop/spotify-ad-mute/spotify_ad_mute.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+.spotify-ad-mute.log
+
+# local-only helpers
+.claude/
+diagnose_dns.sh
+dump_sinks.sh
+sinks.txt
