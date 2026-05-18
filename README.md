@@ -43,7 +43,7 @@ cd spotify-ad-mute
 One-shot, foreground (handy while testing):
 
 ```bash
-./venv/bin/python spotify_ad_mute.py
+./venv/bin/python src/spotify_ad_mute.py
 ```
 
 You'll see a startup self-check, then a heartbeat line every 30 seconds and
@@ -54,10 +54,10 @@ a log line every time mute is toggled. Logs also go to
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp contrib/spotify-ad-mute.service ~/.config/systemd/user/
+cp packaging/systemd/spotify-ad-muter.service ~/.config/systemd/user/
 # Edit the file if your project lives somewhere other than ~/Desktop/spotify-ad-mute
 systemctl --user daemon-reload
-systemctl --user enable --now spotify-ad-mute.service
+systemctl --user enable --now spotify-ad-muter.service
 ```
 
 Useful commands:
@@ -75,11 +75,11 @@ real ad:
 
 ```bash
 # Mute Spotify for 3s — proves the PulseAudio path works.
-./venv/bin/python spotify_ad_mute.py --test-mute
+./venv/bin/python src/spotify_ad_mute.py --test-mute
 
 # Run the ad-trackid classifier on known samples, then pretend an ad
 # arrived and run the full mute/unmute cycle.
-./venv/bin/python spotify_ad_mute.py --simulate-ad
+./venv/bin/python src/spotify_ad_mute.py --simulate-ad
 ```
 
 ## Logs

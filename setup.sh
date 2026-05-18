@@ -21,4 +21,4 @@ echo "[3/3] Installing Python dependencies"
 
 echo
 echo "Setup complete. Start the muter with:"
-echo "    ./venv/bin/python spotify_ad_mute.py"
+echo "    ./venv/bin/python src/spotify_ad_mute.py"
