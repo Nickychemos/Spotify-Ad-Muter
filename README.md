@@ -7,14 +7,19 @@ Spotify can't tell it was skipped.
 ## Install (end users)
 
 Download the right package for your distro from the
-[Releases page](https://github.com/Nickychemos/Spotify-Ad-Muter/releases),
-then install. Once installed, the muter runs as a background service that
-auto-starts on every login — no further setup, no command line.
+[Releases page](https://github.com/Nickychemos/Spotify-Ad-Muter/releases).
+
+**Easiest:** double-click the downloaded file — your system's App Center
+(or Software Center) will open and you can click **Install**.
+
+**Or from a terminal:**
 
 ### Debian / Ubuntu / Mint / Pop!_OS
 
 ```bash
 sudo apt install ~/Downloads/spotify-ad-muter_*.deb
+# …or, if you already cd'd into the folder, keep the ./ prefix:
+sudo apt install ./spotify-ad-muter_*.deb
 ```
 
 ### Fedora / RHEL / openSUSE
@@ -38,10 +43,22 @@ chmod +x spotify-ad-muter-*.AppImage
 # leave this terminal open, or add to your autostart programs
 ```
 
+That's it. The muter is now a background service that auto-starts on every
+login — no further setup, no command line needed.
+
 > Spotify itself must be the **official client**, not Snap or Flatpak — those
 > sandboxed builds block the D-Bus queries this tool relies on. On Debian-
 > family systems install it with `sudo apt install spotify-client` from
 > Spotify's apt repo.
+
+## Verify it's working
+
+```bash
+systemctl --user status spotify-ad-muter   # should say "active (running)"
+spotify-ad-muter --test-mute               # mutes Spotify for 3s as a smoke test
+```
+
+Then just play Spotify — the next ad will be muted automatically.
 
 ## How it works
 
